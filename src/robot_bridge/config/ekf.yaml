@@ -1,0 +1,89 @@
+# Dual EKF Configuration for Odom + IMU + RTK GPS
+
+# 1. Local EKF (Odom -> Base Link)
+# หน้าที่: ทำให้รถขยับสมูทที่สุดบนแผนที่ระยะใกล้ โดยไม่สนพิกัดโลก
+ekf_filter_node_odom:
+  ros__parameters:
+    use_sim_time: false
+    frequency: 10.0
+    sensor_timeout: 0.3
+    two_d_mode: true
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom
+
+    odom0: /odom_raw
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, true,
+                   false, false, false]
+    odom0_queue_size: 10
+
+    imu0: /camera/camera/imu # เปลี่ยนมาใช้ IMU จาก RealSense ที่แม่นยำกว่า
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true, # 🟢 เปิดรับค่า Z-Angular Velocity (การหมุนรอบตัวเอง)
+                  false, false, false]
+    imu0_relative: true
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
+
+# 2. Global EKF (Map -> Odom)
+# หน้าที่: ดูดค่า GPS มาครอบรอยล้อ เพื่อหาตำแหน่งที่แท้จริงระดับเซนติเมตรบนโลก
+ekf_filter_node_map:
+  ros__parameters:
+    use_sim_time: false
+    frequency: 10.0
+    sensor_timeout: 0.3
+    two_d_mode: true
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: map
+
+    odom0: /odom_raw
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, true,
+                   false, false, false]
+    odom0_queue_size: 10
+
+    imu0: /camera/camera/imu # เปลี่ยนมาใช้ IMU จาก RealSense ที่แม่นยำกว่า
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true, # 🟢 เปิดรับค่า Z-Angular Velocity เพื่อแก้พิกัดหลงทิศ
+                  false, false, false]
+    imu0_relative: true # เปลี่ยนกลับเป็น true เพื่อให้ EKF สนใจแค่การเปลี่ยนแปลง ไม่สนใจทิศเหนือจริง
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
+
+    # สัญญาณพิกัดแกน X,Y ที่แปลงมาจากดาวเทียม RTK
+    odom1: /odometry/gps
+    odom1_config: [false, false, false,  # ปิดการรับค่าพิกัดพุ่งตรง X, Y จาก GPS RTK
+                   false, false, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false]
+    odom1_queue_size: 10
+
+# 3. GPS Transform Node
+# หน้าที่: แปลง Latitude/Longitude จาก NMEA ให้กลายเป็นพิกัด X, Y บนพื้นโลกแบน
+navsat_transform:
+  ros__parameters:
+    use_sim_time: false
+    frequency: 30.0
+    delay: 0.0
+    magnetic_declination_radians: 0.0 # แก้ไขได้ถ้าต้องการให้หันหน้าตรงทิศเหนือเป๊ะ
+    yaw_offset: 0.0 # Offset ให้ตรงกับทิศที่รถเริ่มเปิดเครื่อง
+    zero_altitude: true
+    broadcast_cartesian_transform: true
+    publish_filtered_gps: true
+    use_odometry_yaw: false
+    wait_for_datum: false

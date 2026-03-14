@@ -1,0 +1,5 @@
+4/12/25 [ล้อที่ใช้ขับเป็น4wheel ล้อหลังและ visualทั้งหมดเป็น cylinder  ล้อกลางและหน้า มี collision เป็น sphere โดยขับหลัง2หน้า2 ทำให้พอเลี้ยวได้อยู่ในตอนนี้]
+
+5/12/25 [ตอนนี้สามารถทำ SLAM ได้แล้ว ] https://docs.google.com/document/d/1DbjZqKRurtFiyo533fk2vUoar_H53izg5EoJUVtmNec/edit?usp=sharing
+
+8/12/25 [ตอนนี้สามารถทำ Navigation ได้แล้ว] วิธี คือRun #launch , #Nav2 ในNote: command ----และเมื่อเปิดไฟล์ครบแล้วไปที่ Rviz และ ใช้ฟังชั่นก์ 2D pose Estimate โดยคลิ๊กและลาก เพื่อกำหนดทิศทางของหน้ารถ -----จากนั้นใช้ 2D goal pose เพื่อกำหนดจุดหมาย
