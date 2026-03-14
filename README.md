@@ -45,4 +45,6 @@
 
 ---
 
+![รูปcadเปรียบเทียบกับรถจริง](images/รูปcadเปรียบเทียบกับรถจริง.jpg)
+
 © 2026 Autonomous Mower Project - All Rights Reserved
