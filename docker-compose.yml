@@ -42,13 +42,20 @@ services:
     command: >
       ros2 launch robot_bridge hardware_bringup.launch.py
 
-  # ---- Localization (EKF + robot_state_publisher) ----
+  # ---- Localization + RViz2 via VNC ----
   localize:
     <<: *base
     container_name: mower_localize
     restart: unless-stopped
+    ports:
+      - "5900:5900"             # VNC port — เปิด VNC viewer แล้วต่อ PI_IP:5900
     command: >
-      ros2 launch robot_bridge localization.launch.py
+      bash -c "
+        Xvfb :99 -screen 0 1280x800x24 &
+        sleep 1 &&
+        x11vnc -display :99 -rfbauth ~/.vnc/passwd -forever -shared &
+        DISPLAY=:99 ros2 launch robot_bridge localization.launch.py
+      "
 
   # ---- Navigation (Nav2) ----
   navigation:

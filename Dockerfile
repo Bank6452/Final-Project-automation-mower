@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-tf2-tools \
     ros-humble-joint-state-publisher \
     ros-humble-teleop-twist-keyboard \
+    ros-humble-rviz2 \
     # RealSense D435i
     ros-humble-realsense2-camera \
     ros-humble-realsense2-description \
@@ -41,7 +42,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Utilities
     udev \
     curl \
+    # VNC + Virtual Display
+    xvfb \
+    x11vnc \
+    xterm \
     && rm -rf /var/lib/apt/lists/*
+
+# ---- VNC password ----
+RUN mkdir -p ~/.vnc && x11vnc -storepasswd mower ~/.vnc/passwd
 
 # ---- pip install เพิ่มเติม (ถ้าต้องการ) ----
 RUN pip3 install --no-cache-dir pyserial
