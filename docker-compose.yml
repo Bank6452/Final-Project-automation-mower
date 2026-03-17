@@ -1,0 +1,89 @@
+# ============================================================
+#  docker-compose.yml สำหรับ mower_bot บน Raspberry Pi
+# ============================================================
+#
+#  วิธีใช้งาน:
+#    docker compose up hardware    → เปิด hardware_bringup (serial + RealSense + GPS)
+#    docker compose up localize    → เปิด localization (EKF + RSP)
+#    docker compose up navigation  → เปิด Nav2
+#    docker compose run --rm shell → เปิด bash ข้างใน container
+#
+# ============================================================
+
+services:
+
+  # ---- Build image (ใช้ร่วมกันทุก service) ----
+  base: &base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mower_bot:humble
+    network_mode: host          # ROS2 DDS ต้องการ host network
+    ipc: host                   # shared memory สำหรับ ROS2
+    privileged: false
+    environment:
+      - ROS_DOMAIN_ID=0         # เปลี่ยนถ้ามีหลาย robot บน network เดียวกัน
+      - WORKSPACE=/ros2_ws
+      - ROS_DISTRO=humble
+
+  # ---- Hardware Bringup (serial + RealSense + GPS) ----
+  hardware:
+    <<: *base
+    container_name: mower_hardware
+    restart: unless-stopped
+    devices:
+      - /dev/stm32:/dev/stm32           # STM32 (udev rule)
+      - /dev/ttyACM0:/dev/ttyACM0       # Arduino Ultrasonic
+      - /dev/gps_rtk:/dev/gps_rtk       # RTK GPS (udev rule)
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb       # RealSense D435i (USB)
+    device_cgroup_rules:
+      - "c 189:* rmw"                   # USB devices (RealSense)
+    command: >
+      ros2 launch robot_bridge hardware_bringup.launch.py
+
+  # ---- Localization (EKF + robot_state_publisher) ----
+  localize:
+    <<: *base
+    container_name: mower_localize
+    restart: unless-stopped
+    command: >
+      ros2 launch robot_bridge localization.launch.py
+
+  # ---- Navigation (Nav2) ----
+  navigation:
+    <<: *base
+    container_name: mower_navigation
+    restart: unless-stopped
+    command: >
+      ros2 launch robot_bridge navigation.launch.py
+
+  # ---- IMU Test ----
+  imu_test:
+    <<: *base
+    container_name: mower_imu_test
+    devices:
+      - /dev/stm32:/dev/stm32
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    command: >
+      ros2 launch robot_bridge imu_test.launch.py
+
+  # ---- Interactive Shell (debug / development) ----
+  shell:
+    <<: *base
+    container_name: mower_shell
+    stdin_open: true
+    tty: true
+    devices:
+      - /dev/stm32:/dev/stm32
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/gps_rtk:/dev/gps_rtk
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - ./src:/ros2_ws/src              # mount src สำหรับ dev (hot reload)
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    command: bash
